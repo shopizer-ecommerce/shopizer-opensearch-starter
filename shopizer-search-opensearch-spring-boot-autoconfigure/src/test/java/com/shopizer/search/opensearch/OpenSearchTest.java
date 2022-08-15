@@ -94,6 +94,18 @@ public class OpenSearchTest {
 				e.printStackTrace();
 			}
 			
+			/**
+			 * Test search product
+			 */
+			
+			/**
+			 * Test search keywords
+			 */
+			
+			/**
+			 * Test delete document
+			 */
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

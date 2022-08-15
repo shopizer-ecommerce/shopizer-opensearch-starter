@@ -11,6 +11,8 @@ import org.opensearch.action.delete.DeleteResponse;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
 import org.opensearch.client.RequestOptions;
+import org.opensearch.index.query.BoolQueryBuilder;
+import org.opensearch.index.query.QueryBuilders;
 
 import modules.commons.search.SearchModule;
 import modules.commons.search.configuration.SearchConfiguration;
@@ -175,7 +177,24 @@ public class SearchModuleImpl implements SearchModule {
 
 	@Override
 	public SearchResponse searchProducts(SearchRequest searchRequest) throws Exception {
-		// TODO Auto-generated method stub
+		
+		
+		Validate.notNull(searchRequest, "SearchRequest must not be null");
+		Validate.notNull(searchRequest.getLanguage(), "SearchRequest.language must not be null");
+		Validate.notNull(searchRequest.getStore(), "SearchRequest.stoe must not be null");
+		
+		BoolQueryBuilder builder = QueryBuilders.boolQuery();
+		builder.must(
+				QueryBuilders.multiMatchQuery(searchRequest.getSearchString(), new String[]{"name^3", "description^1"})
+					);
+		builder.filter(QueryBuilders.termQuery("store", searchRequest.getStore()));
+		
+		//variants
+		
+		//attributes
+		
+		//aggregations
+		
 		return null;
 	}
 
