@@ -157,7 +157,7 @@ public class SearchClient {
         	languages.add("en");
         }
         
-        final List<String >indexLanguages = new ArrayList<String>(languages);
+        final List<String> indexLanguages = new ArrayList<String>(languages);
         
         /**
          * check if index already exist

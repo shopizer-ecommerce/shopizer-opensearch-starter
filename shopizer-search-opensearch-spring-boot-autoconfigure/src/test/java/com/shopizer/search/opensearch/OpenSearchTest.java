@@ -16,6 +16,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import modules.commons.search.SearchModule;
 import modules.commons.search.configuration.SearchConfiguration;
 import modules.commons.search.request.IndexItem;
+import modules.commons.search.request.SearchFilter;
+import modules.commons.search.request.SearchRequest;
 
 
 @ExtendWith(SpringExtension.class)
@@ -97,6 +99,26 @@ public class OpenSearchTest {
 			/**
 			 * Test search product
 			 */
+			SearchRequest request = new SearchRequest();
+			request.setSearchString("Nike");
+			request.setStore("default");
+			request.setLanguage("en");
+			
+			List<SearchFilter> filters = new ArrayList<SearchFilter>();
+			
+			SearchFilter searchFilter = new SearchFilter();
+			searchFilter.setField("variants.size.keyword");
+			searchFilter.setValue("L");
+			searchFilter.setVariant(true);
+			
+			filters.add(searchFilter);
+			
+			request.setFilters(filters);
+			
+			searchModule.searchProducts(request);
+			
+			System.out.println("TBD");
+			
 			
 			/**
 			 * Test search keywords
@@ -138,6 +160,7 @@ public class OpenSearchTest {
 		config.getProductMappings().put("id", "long");
 		
 		config.getKeywordsMappings().put("name", "text");
+		config.getKeywordsMappings().put("store", "keyword");
 		config.getKeywordsMappings().put("id", "long");
 		
 		/**

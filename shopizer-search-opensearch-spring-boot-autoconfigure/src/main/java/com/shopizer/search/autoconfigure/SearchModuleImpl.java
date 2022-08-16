@@ -5,7 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.lucene.search.join.ScoreMode;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.delete.DeleteResponse;
 import org.opensearch.action.index.IndexRequest;
@@ -13,10 +15,16 @@ import org.opensearch.action.index.IndexResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.index.query.TermQueryBuilder;
+import org.opensearch.rest.RestStatus;
+import org.opensearch.search.SearchHit;
+import org.opensearch.search.SearchHits;
+import org.opensearch.search.builder.SearchSourceBuilder;
 
 import modules.commons.search.SearchModule;
 import modules.commons.search.configuration.SearchConfiguration;
 import modules.commons.search.request.IndexItem;
+import modules.commons.search.request.SearchFilter;
 import modules.commons.search.request.SearchRequest;
 import modules.commons.search.request.SearchResponse;
 
@@ -83,6 +91,7 @@ public class SearchModuleImpl implements SearchModule {
         //Map<String, Object> keyword = this.parameters(k);
         Map<String, Object> map = new HashMap<>();
         map.put("name", item.getName());
+        map.put("store", item.getStore());
         request.source(map);
         
         indexResponse = searchClient.getClient().index(request, RequestOptions.DEFAULT);
@@ -184,18 +193,67 @@ public class SearchModuleImpl implements SearchModule {
 		Validate.notNull(searchRequest.getStore(), "SearchRequest.stoe must not be null");
 		
 		BoolQueryBuilder builder = QueryBuilders.boolQuery();
-		builder.must(
-				QueryBuilders.multiMatchQuery(searchRequest.getSearchString(), new String[]{"name^3", "description^1"})
+		builder.must(//TODO Boost
+				QueryBuilders.multiMatchQuery(searchRequest.getSearchString(), new String[]{"name", "description"})
 					);
 		builder.filter(QueryBuilders.termQuery("store", searchRequest.getStore()));
 		
-		//variants
 		
-		//attributes
+		if(!CollectionUtils.isEmpty(searchRequest.getFilters())) {
+			searchRequest.getFilters().stream().forEach(f -> this.buildFilter(f, builder));
+		}
+
 		
 		//aggregations
 		
+		
+		org.opensearch.action.search.SearchRequest search = new org.opensearch.action.search.SearchRequest( new StringBuilder().append(this.PRODUCTS_INDEX).append(searchRequest.getLanguage()).toString());
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		searchSourceBuilder.query(builder);
+		search.source(searchSourceBuilder);
+		
+		org.opensearch.action.search.SearchResponse searchResponse = searchClient.getClient().search(search,RequestOptions.DEFAULT);
+		RestStatus status = searchResponse.status();
+		
+		//check status
+		
+		SearchHits hits = searchResponse.getHits();
+		
+		for (SearchHit hit : hits) {
+			Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+			System.out.println(hit.getId());
+			/**
+			 *                 String index = hit.getIndex();
+                String type = hit.getType();
+                String id = hit.getId();
+                float score = hit.getScore();
+                // end::search-hits-singleHit-properties
+                // tag::search-hits-singleHit-source
+                String sourceAsString = hit.getSourceAsString();
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                String documentTitle = (String) sourceAsMap.get("title");
+                List<Object> users = (List<Object>) sourceAsMap.get("user");
+                Map<String, Object> innerObject = (Map<String, Object>) sourceAsMap.get("innerObject");
+			 */
+		}
+		
 		return null;
+	}
+	
+	private void buildFilter(SearchFilter filter, BoolQueryBuilder builder) {
+		
+		TermQueryBuilder b = QueryBuilders.termQuery(filter.getField(),  filter.getValue());
+		
+		if(filter.isVariant()) {
+			builder.filter(
+			QueryBuilders
+		    		.nestedQuery("variants", b, ScoreMode.None)
+		    );
+
+		} else {
+			builder.filter(b);
+		}
+		
 	}
 
     
