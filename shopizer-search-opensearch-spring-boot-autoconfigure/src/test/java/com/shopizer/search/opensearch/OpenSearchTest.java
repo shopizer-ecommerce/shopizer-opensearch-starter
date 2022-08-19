@@ -18,6 +18,7 @@ import modules.commons.search.configuration.SearchConfiguration;
 import modules.commons.search.request.IndexItem;
 import modules.commons.search.request.SearchFilter;
 import modules.commons.search.request.SearchRequest;
+import modules.commons.search.request.SearchResponse;
 
 
 @ExtendWith(SpringExtension.class)
@@ -115,7 +116,12 @@ public class OpenSearchTest {
 			
 			request.setFilters(filters);
 			
-			searchModule.searchProducts(request);
+			List<String> aggregations = new ArrayList<String>();
+			aggregations.add("brand");
+			
+			request.setAggregations(aggregations);
+			
+			SearchResponse searchResponse = searchModule.searchProducts(request);
 			
 			System.out.println("TBD");
 			
@@ -126,6 +132,10 @@ public class OpenSearchTest {
 			
 			/**
 			 * Test delete document
+			 */
+			
+			/**
+			 * Delete index
 			 */
 			
 		} catch (Exception e) {
@@ -161,7 +171,8 @@ public class OpenSearchTest {
 		
 		config.getKeywordsMappings().put("name", "text");
 		config.getKeywordsMappings().put("store", "keyword");
-		config.getKeywordsMappings().put("id", "long");
+		config.getKeywordsMappings().put("brand", "text");
+		config.getKeywordsMappings().put("category", "text");
 		
 		/**
 		 * Suggested mapping
@@ -197,16 +208,5 @@ public class OpenSearchTest {
 	
 
 	
-	/**
-	 * Test search keywords
-	 */
-	
-	/**
-	 * Test search product
-	 */
-	
-	/**
-	 * Test delete document
-	 */
 
 }

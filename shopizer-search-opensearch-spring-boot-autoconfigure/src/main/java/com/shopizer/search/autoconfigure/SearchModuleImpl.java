@@ -1,6 +1,7 @@
 package com.shopizer.search.autoconfigure;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,12 +20,23 @@ import org.opensearch.index.query.TermQueryBuilder;
 import org.opensearch.rest.RestStatus;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.SearchHits;
+import org.opensearch.search.aggregations.AggregationBuilders;
+import org.opensearch.search.aggregations.Aggregations;
+import org.opensearch.search.aggregations.bucket.terms.Terms;
+import org.opensearch.search.aggregations.bucket.terms.Terms.Bucket;
+import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import modules.commons.search.SearchModule;
 import modules.commons.search.configuration.SearchConfiguration;
+import modules.commons.search.request.Aggregation;
 import modules.commons.search.request.IndexItem;
 import modules.commons.search.request.SearchFilter;
+import modules.commons.search.request.SearchItem;
 import modules.commons.search.request.SearchRequest;
 import modules.commons.search.request.SearchResponse;
 
@@ -37,6 +49,7 @@ public class SearchModuleImpl implements SearchModule {
 	
 	private final static String PRODUCTS_INDEX = "products_";
 	private final static String KEYWORDS_INDEX = "keywords_";
+	private final static String DEFAULT_AGGREGATION = "aggregations";
 
 
 
@@ -92,6 +105,8 @@ public class SearchModuleImpl implements SearchModule {
         Map<String, Object> map = new HashMap<>();
         map.put("name", item.getName());
         map.put("store", item.getStore());
+        map.put("category", item.getCategory());
+        map.put("brand", item.getBrand());
         request.source(map);
         
         indexResponse = searchClient.getClient().index(request, RequestOptions.DEFAULT);
@@ -179,7 +194,31 @@ public class SearchModuleImpl implements SearchModule {
 
 	@Override
 	public SearchResponse searchKeywords(SearchRequest searchRequest) throws Exception {
-		// TODO Auto-generated method stub
+		Validate.notNull(searchRequest, "SearchRequest must not be null");
+		Validate.notNull(searchRequest.getLanguage(), "SearchRequest.language must not be null");
+		Validate.notNull(searchRequest.getStore(), "SearchRequest.stoe must not be null");
+		
+		BoolQueryBuilder builder = QueryBuilders.boolQuery();
+		builder.must(//TODO Boost TODO suggest
+				QueryBuilders.multiMatchQuery(searchRequest.getSearchString(), new String[]{"name", "brand", "category"})
+					);
+		builder.filter(QueryBuilders.termQuery("store", searchRequest.getStore()));
+		
+		org.opensearch.action.search.SearchRequest search = new org.opensearch.action.search.SearchRequest( new StringBuilder().append(KEYWORDS_INDEX).append(searchRequest.getLanguage()).toString());
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		searchSourceBuilder.query(builder);
+		
+		org.opensearch.action.search.SearchResponse searchResponse = searchClient.getClient().search(search,RequestOptions.DEFAULT);
+		RestStatus status = searchResponse.status();
+		
+		//check status
+		if(status.getStatus() != 200) {
+			throw new Exception("Search Response failed [" + status.getStatus() + "]");
+		}
+		
+		SearchHits hits = searchResponse.getHits();
+		
+		
 		return null;
 	}
 
@@ -194,7 +233,7 @@ public class SearchModuleImpl implements SearchModule {
 		
 		BoolQueryBuilder builder = QueryBuilders.boolQuery();
 		builder.must(//TODO Boost
-				QueryBuilders.multiMatchQuery(searchRequest.getSearchString(), new String[]{"name", "description"})
+				QueryBuilders.multiMatchQuery(searchRequest.getSearchString(), new String[]{"name", "description", "brand", "category"})
 					);
 		builder.filter(QueryBuilders.termQuery("store", searchRequest.getStore()));
 		
@@ -203,41 +242,71 @@ public class SearchModuleImpl implements SearchModule {
 			searchRequest.getFilters().stream().forEach(f -> this.buildFilter(f, builder));
 		}
 
+		TermsAggregationBuilder aggregation = null;
 		
 		//aggregations
+		if(!CollectionUtils.isEmpty(searchRequest.getAggregations())) {
+			aggregation = AggregationBuilders.terms(DEFAULT_AGGREGATION);
+			for(String agg : searchRequest.getAggregations()) {
+				aggregation.field(agg);
+			}
+		}
+        //TermsAggregationBuilder aggregation = AggregationBuilders.terms("aggregations")
+        //        .field("company.keyword").field("");
 		
 		
-		org.opensearch.action.search.SearchRequest search = new org.opensearch.action.search.SearchRequest( new StringBuilder().append(this.PRODUCTS_INDEX).append(searchRequest.getLanguage()).toString());
+		org.opensearch.action.search.SearchRequest search = new org.opensearch.action.search.SearchRequest( new StringBuilder().append(PRODUCTS_INDEX).append(searchRequest.getLanguage()).toString());
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		searchSourceBuilder.query(builder);
+		if(aggregation != null) {
+			searchSourceBuilder.aggregation(aggregation);
+		}
 		search.source(searchSourceBuilder);
+		
+
 		
 		org.opensearch.action.search.SearchResponse searchResponse = searchClient.getClient().search(search,RequestOptions.DEFAULT);
 		RestStatus status = searchResponse.status();
 		
 		//check status
+		if(status.getStatus() != 200) {
+			throw new Exception("Search Response failed [" + status.getStatus() + "]");
+		}
 		
 		SearchHits hits = searchResponse.getHits();
 		
+
+		
+		SearchResponse serviceResponse = new SearchResponse();
+		serviceResponse.setCount(hits.getTotalHits().value);
+		
 		for (SearchHit hit : hits) {
 			Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-			System.out.println(hit.getId());
-			/**
-			 *                 String index = hit.getIndex();
-                String type = hit.getType();
-                String id = hit.getId();
-                float score = hit.getScore();
-                // end::search-hits-singleHit-properties
-                // tag::search-hits-singleHit-source
-                String sourceAsString = hit.getSourceAsString();
-                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                String documentTitle = (String) sourceAsMap.get("title");
-                List<Object> users = (List<Object>) sourceAsMap.get("user");
-                Map<String, Object> innerObject = (Map<String, Object>) sourceAsMap.get("innerObject");
-			 */
+			
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			
+			SearchItem item = mapper.convertValue(sourceAsMap, SearchItem.class);
+			
+			serviceResponse.getItems().add(item);
+			
 		}
 		
-		return null;
+		Aggregations aggregations = searchResponse.getAggregations();
+
+		
+		Terms aggregate = aggregations.get(DEFAULT_AGGREGATION);
+
+		//get count per aggregations
+		for(Bucket bucket : aggregate.getBuckets()) {
+			Aggregation agg = new Aggregation();
+			agg.setCount(bucket.getDocCount());
+			agg.setName(bucket.getKeyAsString());
+			serviceResponse.getAggregations().add(agg);
+		}
+		
+
+		return serviceResponse;
 	}
 	
 	private void buildFilter(SearchFilter filter, BoolQueryBuilder builder) {
@@ -254,6 +323,18 @@ public class SearchModuleImpl implements SearchModule {
 			builder.filter(b);
 		}
 		
+	}
+
+
+	@Override
+	public Object getConnection() {
+		// TODO Auto-generated method stub
+		try {
+			return this.searchClient.getClient();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			throw new RuntimeException(e);
+		}
 	}
 
     
