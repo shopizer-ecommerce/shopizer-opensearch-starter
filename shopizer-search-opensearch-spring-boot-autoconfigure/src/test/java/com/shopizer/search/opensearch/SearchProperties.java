@@ -14,7 +14,6 @@ import modules.commons.search.configuration.SearchHost;
 @ConfigurationProperties(prefix = "search") 
 @EnableAutoConfiguration
 @ComponentScan({"com.shopizer.search"})
-//@ConfigurationPropertiesScan 
 public class SearchProperties {
 	
     private String clusterName;
