@@ -1,7 +1,6 @@
 package com.shopizer.search.autoconfigure;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.index.query.BoolQueryBuilder;
+import org.opensearch.index.query.MultiMatchQueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.query.TermQueryBuilder;
 import org.opensearch.rest.RestStatus;
@@ -26,7 +26,6 @@ import org.opensearch.search.aggregations.bucket.terms.Terms;
 import org.opensearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -76,8 +75,7 @@ public class SearchModuleImpl implements SearchModule {
 		
 		Validate.notNull(item, "Item must not be null");
 		Validate.notNull(item.getLanguage(),"Languge must not be null");
-		
-		
+			
 		
 		if(searchClient == null) {
 			throw new Exception("OpenSearch client has not been initialized. Please run configure(SearchConfiguration) before trying to index.");
@@ -87,7 +85,7 @@ public class SearchModuleImpl implements SearchModule {
 		//index to product
         IndexRequest request = new IndexRequest(new StringBuilder().append(PRODUCTS_INDEX).append(item.getLanguage()).toString());
         request.id(String.valueOf(item.getId()));
-        Map<String, Object> product = this.parameters(item);
+        Map<String, Object> product = parameters(item);
         request.source(product);
         
         IndexResponse indexResponse = searchClient.getClient().index(request, RequestOptions.DEFAULT);
@@ -96,17 +94,18 @@ public class SearchModuleImpl implements SearchModule {
         
         //index to keyword
         
+        /**
         KeywordIndex k = new KeywordIndex();
         k.setName(item.getName());
+        **/
+
         
         request = new IndexRequest(new StringBuilder().append(KEYWORDS_INDEX).append(item.getLanguage()).toString());
         request.id(String.valueOf(item.getId()));
         //Map<String, Object> keyword = this.parameters(k);
         Map<String, Object> map = new HashMap<>();
-        map.put("name", item.getName());
         map.put("store", item.getStore());
-        map.put("category", item.getCategory());
-        map.put("brand", item.getBrand());
+        map.put("suggestions", item.getName());
         request.source(map);
         
         indexResponse = searchClient.getClient().index(request, RequestOptions.DEFAULT);
@@ -144,7 +143,7 @@ public class SearchModuleImpl implements SearchModule {
 	public void index(List<IndexItem> item) throws Exception {
 		item.stream().forEach(i -> {
 			try {
-				this.index(i);
+				index(i);
 			} catch (final Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -171,8 +170,6 @@ public class SearchModuleImpl implements SearchModule {
 			}
 		});
 
-
-		
 		
 	}
 	
@@ -198,10 +195,11 @@ public class SearchModuleImpl implements SearchModule {
 		Validate.notNull(searchRequest.getLanguage(), "SearchRequest.language must not be null");
 		Validate.notNull(searchRequest.getStore(), "SearchRequest.stoe must not be null");
 		
+		MultiMatchQueryBuilder multiMatchQueryBuilder=new MultiMatchQueryBuilder(searchRequest.getSearchString(), new String[]{"suggestions", "suggestions._2gram", "suggestions._3gram"});
+		multiMatchQueryBuilder.type("bool_prefix");
+		
 		BoolQueryBuilder builder = QueryBuilders.boolQuery();
-		builder.must(//TODO Boost TODO suggest
-				QueryBuilders.multiMatchQuery(searchRequest.getSearchString(), new String[]{"name", "brand", "category"})
-					);
+		builder.must(multiMatchQueryBuilder);
 		builder.filter(QueryBuilders.termQuery("store", searchRequest.getStore()));
 		
 		org.opensearch.action.search.SearchRequest search = new org.opensearch.action.search.SearchRequest( new StringBuilder().append(KEYWORDS_INDEX).append(searchRequest.getLanguage()).toString());
@@ -218,8 +216,23 @@ public class SearchModuleImpl implements SearchModule {
 		
 		SearchHits hits = searchResponse.getHits();
 		
+		SearchResponse serviceResponse = new SearchResponse();
+		serviceResponse.setCount(hits.getTotalHits().value);
 		
-		return null;
+		for (SearchHit hit : hits) {
+			Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+			
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			
+			SearchItem item = mapper.convertValue(sourceAsMap, SearchItem.class);
+			
+			serviceResponse.getItems().add(item);
+			
+		}
+		
+		
+		return serviceResponse;
 	}
 
 
@@ -251,9 +264,7 @@ public class SearchModuleImpl implements SearchModule {
 				aggregation.field(agg);
 			}
 		}
-        //TermsAggregationBuilder aggregation = AggregationBuilders.terms("aggregations")
-        //        .field("company.keyword").field("");
-		
+
 		
 		org.opensearch.action.search.SearchRequest search = new org.opensearch.action.search.SearchRequest( new StringBuilder().append(PRODUCTS_INDEX).append(searchRequest.getLanguage()).toString());
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();

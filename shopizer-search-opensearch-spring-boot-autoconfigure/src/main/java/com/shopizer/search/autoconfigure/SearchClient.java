@@ -40,6 +40,8 @@ import org.opensearch.client.sniff.SniffOnFailureListener;
 import org.opensearch.client.sniff.Sniffer;
 import org.opensearch.common.settings.Settings;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import modules.commons.search.configuration.SearchConfiguration;
 import modules.commons.search.configuration.SearchHost;
 
@@ -118,7 +120,6 @@ public class SearchClient {
 			                      
 			                      
 			                     
-			                      
 			            	  	} catch(Exception e) {
 			            	  		throw new RuntimeException(e);
 			            	  	}
@@ -170,14 +171,14 @@ public class SearchClient {
         
         indexLanguages.stream().forEach(l -> {
 			try {
-				this.createIndex(PRODUCTS_INDEX, configuration.getProductMappings(), l);
+				this.createIndex(PRODUCTS_INDEX, configuration.getProductMappings(), false, l);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		});
         indexLanguages.stream().forEach(l -> {
 			try {
-				this.createIndex(KEYWORDS_INDEX, configuration.getKeywordsMappings(), l);
+				this.createIndex(KEYWORDS_INDEX, configuration.getKeywordsMappings(), true, l);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -200,7 +201,7 @@ public class SearchClient {
 	}
 
 	
-	private void createIndex(String indexPrefix, Map<String,String> mappings, String language) throws Exception {
+	private void createIndex(String indexPrefix, Map<String,String> mappings, boolean hasMappings, String language) throws Exception {
 		StringBuilder indexBuilder = new StringBuilder();
 		indexBuilder.append(indexPrefix).append(language.toLowerCase());
 		CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexBuilder.toString());
@@ -218,11 +219,31 @@ public class SearchClient {
 	    );
 
         HashMap<String, Object> properties = new HashMap<String, Object>();
-        mappings.entrySet().stream().forEach(e -> this.addMapping(e.getKey(), e.getValue(), properties));
+        mappings.entrySet().stream().forEach(e -> addMapping(e.getKey(), e.getValue(), properties));
+        
+
+        if(hasMappings) {
+        	HashMap<String, Object> keywordProperties = new HashMap<String, Object>();
+        	this.addKeyWordMapping(keywordProperties);
+        	properties.putAll(keywordProperties);
+        }
+        
         
         HashMap<String, Object> rootProperties = new HashMap<String, Object>();
         rootProperties.put("properties", properties);
         
+        /**
+         * Debug Json
+         */
+        
+        /**
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonResult = mapper.writerWithDefaultPrettyPrinter()
+          .writeValueAsString(rootProperties);
+        System.out.println(jsonResult);
+        **/
+        
+
         createIndexRequest.mapping(rootProperties);
         
         CreateIndexResponse createIndexResponse = searchClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
@@ -244,11 +265,16 @@ public class SearchClient {
 	private void addMapping(String key,  String value, HashMap<String, Object> properties) {
         HashMap<String, String> typeMapping = new HashMap<String,String>();
         typeMapping.put("type", value);
-        
-        //HashMap<String, Object> fieldMapping = new HashMap<String, Object>();
-        //fieldMapping.put(key, typeMapping);
-        
+
         properties.put(key, typeMapping);
+
+	}
+	
+	private void addKeyWordMapping(HashMap<String, Object> properties) {
+        HashMap<String, String> typeMapping = new HashMap<String,String>();
+        typeMapping.put("type", "search_as_you_type");
+
+        properties.put("suggestions", typeMapping);
 
 	}
 	
