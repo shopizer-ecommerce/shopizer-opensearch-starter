@@ -71,6 +71,12 @@ public class SearchClient {
 
         RestClientBuilder builder = RestClient
         		.builder(hostList.toArray(new HttpHost[hostList.size()]));
+        
+        /**
+         * spring boot issue documented here
+         * https://github.com/elastic/elasticsearch/issues/59261
+         */
+        builder.setHttpClientConfigCallback(httpAsyncClientBuilder -> httpAsyncClientBuilder.setKeepAliveStrategy((response, context) -> 3600000/* 1hour */));
 
         
         if(configuration.getCredentials()!=null) {
