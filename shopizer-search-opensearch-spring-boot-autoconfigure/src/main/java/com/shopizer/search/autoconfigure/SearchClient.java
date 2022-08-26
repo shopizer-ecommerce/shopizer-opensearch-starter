@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
@@ -34,13 +33,7 @@ import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.client.indices.CreateIndexRequest;
 import org.opensearch.client.indices.CreateIndexResponse;
 import org.opensearch.client.indices.GetIndexRequest;
-import org.opensearch.client.sniff.NodesSniffer;
-import org.opensearch.client.sniff.OpenSearchNodesSniffer;
-import org.opensearch.client.sniff.SniffOnFailureListener;
-import org.opensearch.client.sniff.Sniffer;
 import org.opensearch.common.settings.Settings;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import modules.commons.search.configuration.SearchConfiguration;
 import modules.commons.search.configuration.SearchHost;
@@ -81,7 +74,6 @@ public class SearchClient {
         
         if(configuration.getCredentials()!=null) {
 
-			if(configuration.getCredentials()!=null) {
 				final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
 				credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(configuration.getCredentials().getUserName(), configuration.getCredentials().getPassword()));
 			
@@ -137,13 +129,12 @@ public class SearchClient {
 		          
 		        );
 	        
-			}
         
         }
  
         searchClient = new RestHighLevelClient(builder);
         
-
+        /**
         NodesSniffer nodesniffer = new OpenSearchNodesSniffer (
         		searchClient.getLowLevelClient(),
                 TimeUnit.SECONDS.toMillis(5),
@@ -155,6 +146,7 @@ public class SearchClient {
  
         SniffOnFailureListener listener = new SniffOnFailureListener();
         listener.setSniffer(sniffer);
+        **/
 
         List<String> languages = configuration.getLanguages();
 
@@ -216,7 +208,8 @@ public class SearchClient {
 		GetIndexRequest request = new GetIndexRequest(indexBuilder.toString());
 		boolean exists = searchClient.indices().exists(request, RequestOptions.DEFAULT);
 		if(exists) {
-			throw new Exception("Index " + indexBuilder.toString() + " already exist");
+			return;
+			//throw new Exception("Index " + indexBuilder.toString() + " already exist");
 		}
 		
         createIndexRequest.settings(Settings.builder()
