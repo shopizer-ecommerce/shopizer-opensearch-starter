@@ -4,12 +4,15 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.lucene.search.join.ScoreMode;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.delete.DeleteResponse;
+import org.opensearch.action.get.GetRequest;
+import org.opensearch.action.get.GetResponse;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
 import org.opensearch.client.RequestOptions;
@@ -33,11 +36,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import modules.commons.search.SearchModule;
 import modules.commons.search.configuration.SearchConfiguration;
 import modules.commons.search.request.Aggregation;
+import modules.commons.search.request.Document;
 import modules.commons.search.request.IndexItem;
 import modules.commons.search.request.SearchFilter;
 import modules.commons.search.request.SearchItem;
 import modules.commons.search.request.SearchRequest;
 import modules.commons.search.request.SearchResponse;
+
+
+/**
+ * Search implementation for OpenSearch
+ * provides functionality for
+ * 	Indexing Document
+ *  Searching Document
+ *  Deleting Document
+ *  Getting Document
+ *  
+ * Translated to Shopizer e commerce search products and autocomplete as well as aggregations (search facets)
+ * @author carlsamson
+ *
+ */
 
 public class SearchModuleImpl implements SearchModule {
 
@@ -92,13 +110,7 @@ public class SearchModuleImpl implements SearchModule {
         System.out.println("Adding product document:");
         System.out.println(indexResponse);
         
-        //index to keyword
-        
-        /**
-        KeywordIndex k = new KeywordIndex();
-        k.setName(item.getName());
-        **/
-
+        //index to keywor
         
         request = new IndexRequest(new StringBuilder().append(KEYWORDS_INDEX).append(item.getLanguage()).toString());
         request.id(String.valueOf(item.getId()));
@@ -134,9 +146,7 @@ public class SearchModuleImpl implements SearchModule {
 		public void setName(String name) {
 			this.name = name;
 		}
-
-
-    	
+	
     }
 
 	@Override
@@ -179,10 +189,12 @@ public class SearchModuleImpl implements SearchModule {
 		StringBuilder keywordIndex = new StringBuilder().append(KEYWORDS_INDEX).append(language);
 		
 		
-		
+		//delete product
         DeleteRequest deleteDocumentRequest = new DeleteRequest(productsIndex.toString(), String.valueOf(documentId));
         DeleteResponse deleteResponse = searchClient.getClient().delete(deleteDocumentRequest, RequestOptions.DEFAULT);
         
+        
+        //delete keywords
         deleteDocumentRequest = new DeleteRequest(keywordIndex.toString(), String.valueOf(documentId));
         deleteResponse = searchClient.getClient().delete(deleteDocumentRequest, RequestOptions.DEFAULT);
 		
@@ -287,7 +299,6 @@ public class SearchModuleImpl implements SearchModule {
 		SearchHits hits = searchResponse.getHits();
 		
 
-		
 		SearchResponse serviceResponse = new SearchResponse();
 		serviceResponse.setCount(hits.getTotalHits().value);
 		
@@ -339,13 +350,76 @@ public class SearchModuleImpl implements SearchModule {
 
 	@Override
 	public Object getConnection() {
-		// TODO Auto-generated method stub
 		try {
 			return this.searchClient.getClient();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			throw new RuntimeException(e);
 		}
+	}
+
+
+
+
+	@Override
+	public Document getDocument(Long id, String language) throws Exception {
+		
+		GetRequest getRequest = new GetRequest(
+				productsIndexBuilder(language), 
+		        String.valueOf(id)); 
+		
+		GetResponse getResponse = this.searchClient.getClient().get(getRequest, RequestOptions.DEFAULT);
+
+		if (getResponse.isExists()) {
+			
+			
+			String index = getResponse.getIndex();
+			String documentId = getResponse.getId();
+			
+		    long version = getResponse.getVersion();
+		    String sourceAsString = getResponse.getSourceAsString();        
+		    Map<String, Object> sourceAsMap = getResponse.getSourceAsMap(); 
+
+		    /**
+		     * Map to Document
+		     */
+		    
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			
+			Document doc = mapper.convertValue(sourceAsMap, Document.class);
+			doc.setDocumentId(documentId);
+			
+		    return doc;
+		    
+		} else {
+		    throw new Exception("Document with id [" + id + "] does not exist in products index");
+		}
+		
+	}
+
+
+	@Override
+	public List<Document> getDocument(Long id, List<String> languages) throws Exception { 
+		//TODO use batch
+		
+		List<Document> getDocuments = languages.stream().map(l -> {
+			try {
+				return this.getDocument(id, l);
+			} catch (Exception e) {
+				throw new RuntimeException("Cannot convert to document [" + id + "] with language [" + l + "]");
+			}
+		}).collect(Collectors.toList());
+		return getDocuments;
+	}
+	
+	
+	private String productsIndexBuilder(String language) {
+		return new StringBuilder().append(PRODUCTS_INDEX).append(language).toString();
+
+	}
+	
+	private String keywordsIndexBuilder(String language) {
+		return new StringBuilder().append(KEYWORDS_INDEX).append(language).toString();
 	}
 
     
