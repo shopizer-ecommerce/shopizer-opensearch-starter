@@ -357,12 +357,21 @@ public class SearchModuleImpl implements SearchModule {
 		}
 	}
 
+	
+	
+	private String productsIndexBuilder(String language) {
+		return new StringBuilder().append(PRODUCTS_INDEX).append(language).toString();
 
+	}
+	
+	private String keywordsIndexBuilder(String language) {
+		return new StringBuilder().append(KEYWORDS_INDEX).append(language).toString();
+	}
 
 
 	@Override
-	public Document getDocument(Long id, String language) throws Exception {
-		
+	public Document getDocument(Long id, String language, modules.commons.search.request.RequestOptions option)
+			throws Exception {
 		GetRequest getRequest = new GetRequest(
 				productsIndexBuilder(language), 
 		        String.valueOf(id)); 
@@ -392,34 +401,26 @@ public class SearchModuleImpl implements SearchModule {
 		    return doc;
 		    
 		} else {
-		    throw new Exception("Document with id [" + id + "] does not exist in products index");
+			if(option == option.FAIL_ON_NOT_FOUNT) {
+				throw new Exception("Document with id [" + id + "] does not exist in products index");
+			}
+			return null;
 		}
-		
+	
 	}
 
 
 	@Override
-	public List<Document> getDocument(Long id, List<String> languages) throws Exception { 
-		//TODO use batch
-		
+	public List<Document> getDocument(Long id, List<String> languages,
+			modules.commons.search.request.RequestOptions option) throws Exception {
 		List<Document> getDocuments = languages.stream().map(l -> {
 			try {
-				return this.getDocument(id, l);
+				return this.getDocument(id, l, option);
 			} catch (Exception e) {
 				throw new RuntimeException("Cannot convert to document [" + id + "] with language [" + l + "]");
 			}
 		}).collect(Collectors.toList());
 		return getDocuments;
-	}
-	
-	
-	private String productsIndexBuilder(String language) {
-		return new StringBuilder().append(PRODUCTS_INDEX).append(language).toString();
-
-	}
-	
-	private String keywordsIndexBuilder(String language) {
-		return new StringBuilder().append(KEYWORDS_INDEX).append(language).toString();
 	}
 
     
