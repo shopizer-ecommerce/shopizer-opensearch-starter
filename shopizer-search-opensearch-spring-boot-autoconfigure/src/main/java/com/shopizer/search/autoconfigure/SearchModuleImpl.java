@@ -417,7 +417,10 @@ public class SearchModuleImpl implements SearchModule {
 			try {
 				return this.getDocument(id, l, option);
 			} catch (Exception e) {
-				throw new RuntimeException("Cannot convert to document [" + id + "] with language [" + l + "]");
+				if(option == option.FAIL_ON_NOT_FOUNT) {
+					throw new RuntimeException("Cannot convert to document [" + id + "] with language [" + l + "]");
+				}
+				return null;
 			}
 		}).collect(Collectors.toList());
 		return getDocuments;
