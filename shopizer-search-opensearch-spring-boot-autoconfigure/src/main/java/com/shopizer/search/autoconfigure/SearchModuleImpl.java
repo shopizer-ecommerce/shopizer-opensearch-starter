@@ -1,9 +1,11 @@
 package com.shopizer.search.autoconfigure;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -370,7 +372,7 @@ public class SearchModuleImpl implements SearchModule {
 
 
 	@Override
-	public Document getDocument(Long id, String language, modules.commons.search.request.RequestOptions option)
+	public Optional<Document> getDocument(Long id, String language, modules.commons.search.request.RequestOptions option)
 			throws Exception {
 		GetRequest getRequest = new GetRequest(
 				productsIndexBuilder(language), 
@@ -398,22 +400,26 @@ public class SearchModuleImpl implements SearchModule {
 			Document doc = mapper.convertValue(sourceAsMap, Document.class);
 			doc.setDocumentId(documentId);
 			
-		    return doc;
+		    return Optional.of(doc);
 		    
 		} else {
 			if(option == option.FAIL_ON_NOT_FOUNT) {
 				throw new Exception("Document with id [" + id + "] does not exist in products index");
 			}
-			return null;
+			return Optional.empty();
 		}
 	
 	}
 
 
 	@Override
-	public List<Document> getDocument(Long id, List<String> languages,
+	public List<Optional<Document>> getDocument(Long id, List<String> languages,
 			modules.commons.search.request.RequestOptions option) throws Exception {
-		List<Document> getDocuments = languages.stream().map(l -> {
+		
+		Validate.notNull(id, "id cannot be null");
+		Validate.notEmpty(languages, "Languages cannot be empty");
+		
+		List<Optional<Document>> getDocuments = languages.stream().map(l -> {
 			try {
 				return this.getDocument(id, l, option);
 			} catch (Exception e) {
