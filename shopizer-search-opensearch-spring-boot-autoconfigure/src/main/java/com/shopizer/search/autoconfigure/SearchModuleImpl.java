@@ -220,6 +220,8 @@ public class SearchModuleImpl implements SearchModule {
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		searchSourceBuilder.query(builder);
 		
+		search.source(searchSourceBuilder);
+		
 		org.opensearch.action.search.SearchResponse searchResponse = searchClient.getClient().search(search,RequestOptions.DEFAULT);
 		RestStatus status = searchResponse.status();
 		
