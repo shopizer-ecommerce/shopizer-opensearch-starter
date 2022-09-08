@@ -320,15 +320,17 @@ public class SearchModuleImpl implements SearchModule {
 		
 		Aggregations aggregations = searchResponse.getAggregations();
 
+		if(aggregations != null) {
 		
-		Terms aggregate = aggregations.get(DEFAULT_AGGREGATION);
-
-		//get count per aggregations
-		for(Bucket bucket : aggregate.getBuckets()) {
-			Aggregation agg = new Aggregation();
-			agg.setCount(bucket.getDocCount());
-			agg.setName(bucket.getKeyAsString());
-			serviceResponse.getAggregations().add(agg);
+			Terms aggregate = aggregations.get(DEFAULT_AGGREGATION);
+	
+			//get count per aggregations
+			for(Bucket bucket : aggregate.getBuckets()) {
+				Aggregation agg = new Aggregation();
+				agg.setCount(bucket.getDocCount());
+				agg.setName(bucket.getKeyAsString());
+				serviceResponse.getAggregations().add(agg);
+			}
 		}
 		
 
