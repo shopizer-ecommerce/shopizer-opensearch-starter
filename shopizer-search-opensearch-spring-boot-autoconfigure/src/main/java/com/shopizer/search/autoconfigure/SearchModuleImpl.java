@@ -1,7 +1,6 @@
 package com.shopizer.search.autoconfigure;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,10 +73,7 @@ public class SearchModuleImpl implements SearchModule {
 
 	@Override
 	public void configure(SearchConfiguration configuration) throws Exception {
-		
-		searchClient = SearchClient.getInstance(configuration);
-
-		
+		searchClient = SearchClient.getInstance(configuration);	
 	}
 
 
@@ -123,8 +119,8 @@ public class SearchModuleImpl implements SearchModule {
         request.source(map);
         
         indexResponse = searchClient.getClient().index(request, RequestOptions.DEFAULT);
-        System.out.println("Adding keyword document:");
-        System.out.println(indexResponse);
+        //System.out.println("Adding keyword document:");
+        //System.out.println(indexResponse);
 		
 	}
 	

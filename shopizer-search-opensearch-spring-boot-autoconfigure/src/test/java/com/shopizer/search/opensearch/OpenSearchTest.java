@@ -40,6 +40,64 @@ import modules.commons.search.request.SearchResponse;
 @ContextConfiguration(classes=SearchProperties.class)
 @EnableConfigurationProperties(SearchProperties.class)
 public class OpenSearchTest {
+	
+	
+	private final static String KEYWORDS_MAPPING_DEFAULT = "{\"properties\":"
+			+ "      {\n\"id\": {\n"
+			+ "        \"type\": \"long\"\n"
+			+ "      }\n"
+			+ "     }\n"
+			+ "    }";	
+	
+	private final static String PRODUCT_MAPPING_DEFAULT = "{\"properties\":"
+			+ "      {\n\"id\": {\n"
+			+ "        \"type\": \"long\"\n"
+			+ "      },\n\"price\": {\n"
+			+ "        \"type\": \"float\"\n"
+			+ "      },\n\"description\": {\n"
+			+ "        \"type\": \"text\"\n"
+			+ "      },\n\"name\": {\n"
+			+ "        \"type\": \"text\"\n"
+			+ "      },\n\"category\": {\n"
+			+ "        \"type\": \"keyword\", \n"
+			+ "        \"normalizer\": \"custom_normalizer\"\n"
+			+ "      },\n\"brand\": {\n"
+			+ "        \"type\": \"keyword\" ,\n"
+			+ "        \"normalizer\": \"custom_normalizer\"\n"
+			+ "      },\n\"attributes\": {\n"
+			+ "        \"type\": \"nested\"\n"
+			+ "      },\n\"variants\": {\n"
+			+ "        \"type\": \"nested\" \n"
+			+ "      },\n\"store\": {\n"
+			+ "        \"type\": \"keyword\" \n"
+			+ "      },\n\"reviews\": {\n"
+			+ "        \"type\": \"keyword\" \n"
+			+ "      },\n\"image\": {\n"
+			+ "        \"type\": \"keyword\"\n"
+			+ "      }\n"
+			+ "    }\n"
+			+ "  }";	
+	private final static String SETTING_DEFAULT = "{\"analysis\": {\n"
+			+ "      \"normalizer\": {\n"
+			+ "        \"custom_normalizer\": {\n"
+			+ "          \"type\": \"custom\",\n"
+			+ "          \"char_filter\": [],\n"
+			+ "          \"filter\": [\"lowercase\", \"asciifolding\"]\n"
+			+ "        }\n"
+			+ "      }\n"
+			+ "    }\n"
+			+ "  }";
+	private final static String SETTING_en = "{\"analysis\": {\n"
+			+ "      \"normalizer\": {\n"
+			+ "        \"custom_normalizer\": {\n"
+			+ "          \"type\": \"custom\",\n"
+			+ "          \"char_filter\": [],\n"
+			+ "          \"filter\": [\"lowercase\", \"asciifolding\"]\n"
+			+ "        }\n"
+			+ "      }\n"
+			+ "    }\n"
+			+ "  }";
+
 
 
 	@Autowired
@@ -75,8 +133,8 @@ public class OpenSearchTest {
 			IndexItem item = new IndexItem();
 			item.setId(1L);
 			item.setLanguage("en");
-			item.setBrand("nike");
-			item.setCategory("shoes");
+			item.setBrand("Nike");
+			item.setCategory("Shoes");
 			
 			item.setName("Nike Zoom Fly 5");
 			item.setDescription("Bridge the gap between your weekend training run and race day in a durable design that can be deployed not just at the starting line of your favourite race but in the days and months after your conquest.");
@@ -218,6 +276,11 @@ public class OpenSearchTest {
 		
 		config.setLanguages(langs);
 		
+		config.getProductMappings().put("en", PRODUCT_MAPPING_DEFAULT);
+		config.getKeywordsMappings().put("en", KEYWORDS_MAPPING_DEFAULT);
+		config.getSettings().put("en", SETTING_DEFAULT);
+		
+		/**
 		config.getProductMappings().put("variants", "nested");
 		config.getProductMappings().put("brand", "keyword");
 		config.getProductMappings().put("store", "keyword");
@@ -228,6 +291,7 @@ public class OpenSearchTest {
 		config.getProductMappings().put("id", "long");
 		
 		config.getKeywordsMappings().put("store", "keyword");
+		**/
 		
 		/**
 		 * Suggested mapping

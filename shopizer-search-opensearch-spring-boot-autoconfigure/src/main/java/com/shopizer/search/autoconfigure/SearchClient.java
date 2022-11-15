@@ -1,16 +1,13 @@
 package com.shopizer.search.autoconfigure;
 
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
@@ -33,7 +30,7 @@ import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.client.indices.CreateIndexRequest;
 import org.opensearch.client.indices.CreateIndexResponse;
 import org.opensearch.client.indices.GetIndexRequest;
-import org.opensearch.common.settings.Settings;
+import org.opensearch.common.xcontent.XContentType;
 
 import modules.commons.search.configuration.SearchConfiguration;
 import modules.commons.search.configuration.SearchHost;
@@ -133,20 +130,7 @@ public class SearchClient {
         }
  
         searchClient = new RestHighLevelClient(builder);
-        
-        /**
-        NodesSniffer nodesniffer = new OpenSearchNodesSniffer (
-        		searchClient.getLowLevelClient(),
-                TimeUnit.SECONDS.toMillis(5),
-                configuration.getHosts().get(0).getScheme().equals("https") ?  OpenSearchNodesSniffer.Scheme.HTTPS: OpenSearchNodesSniffer.Scheme.HTTP);
- 
-        Sniffer sniffer = Sniffer.builder(searchClient.getLowLevelClient())
-                .setNodesSniffer(nodesniffer)
-                .build();
- 
-        SniffOnFailureListener listener = new SniffOnFailureListener();
-        listener.setSniffer(sniffer);
-        **/
+
 
         List<String> languages = configuration.getLanguages();
 
@@ -169,14 +153,14 @@ public class SearchClient {
         
         indexLanguages.stream().forEach(l -> {
 			try {
-				this.createIndex(PRODUCTS_INDEX, configuration.getProductMappings(), false, l);
+				this.createIndex(PRODUCTS_INDEX, configuration.getProductMappings().get(l), configuration.getSettings().get(l), false, l);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		});
         indexLanguages.stream().forEach(l -> {
 			try {
-				this.createIndex(KEYWORDS_INDEX, configuration.getKeywordsMappings(), true, l);
+				this.createIndex(KEYWORDS_INDEX, configuration.getKeywordsMappings().get(l), configuration.getSettings().get(l),true, l);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -199,7 +183,7 @@ public class SearchClient {
 	}
 
 	
-	private void createIndex(String indexPrefix, Map<String,String> mappings, boolean hasMappings, String language) throws Exception {
+	private void createIndex(String indexPrefix, String mappings, String settings, boolean hasMappings, String language) throws Exception {
 		StringBuilder indexBuilder = new StringBuilder();
 		indexBuilder.append(indexPrefix).append(language.toLowerCase());
 		CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexBuilder.toString());
@@ -209,13 +193,21 @@ public class SearchClient {
 		boolean exists = searchClient.indices().exists(request, RequestOptions.DEFAULT);
 		if(exists) {
 			return;
-			//throw new Exception("Index " + indexBuilder.toString() + " already exist");
 		}
 		
+
+		createIndexRequest.settings(
+		        settings
+		        , XContentType.JSON);
+		
+		
+
+		/**
         createIndexRequest.settings(Settings.builder()
 	            .put("index.number_of_shards", 4)
 	            .put("index.number_of_replicas", 3)
 	    );
+	    **.
 
         HashMap<String, Object> properties = new HashMap<String, Object>();
         mappings.entrySet().stream().forEach(e -> addMapping(e.getKey(), e.getValue(), properties));
@@ -243,7 +235,9 @@ public class SearchClient {
         **/
         
 
-        createIndexRequest.mapping(rootProperties);
+		createIndexRequest.mapping(mappings, XContentType.JSON);
+		
+		System.out.println(mappings);
         
         CreateIndexResponse createIndexResponse = searchClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
         System.out.println("Creating index: " + indexBuilder.toString());
@@ -252,6 +246,7 @@ public class SearchClient {
         
 	}
 	
+	/**
     private Map<String, Object> parameters(Object obj) {
         Map<String, Object> map = new HashMap<>();
         for (Field field : obj.getClass().getDeclaredFields()) {
@@ -268,7 +263,9 @@ public class SearchClient {
         properties.put(key, typeMapping);
 
 	}
+	**/
 	
+	/**
 	private void addKeyWordMapping(HashMap<String, Object> properties) {
         HashMap<String, String> typeMapping = new HashMap<String,String>();
         typeMapping.put("type", "search_as_you_type");
@@ -276,6 +273,7 @@ public class SearchClient {
         properties.put("suggestions", typeMapping);
 
 	}
+	**/
 	
 	protected RestHighLevelClient getClient() throws Exception {
 		
