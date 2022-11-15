@@ -421,6 +421,7 @@ public class SearchModuleImpl implements SearchModule {
 		
 		List<Optional<Document>> getDocuments = languages.stream().map(l -> {
 			try {
+				Optional<Document> d = this.getDocument(id, l, option);
 				return this.getDocument(id, l, option);
 			} catch (Exception e) {
 				if(option == option.FAIL_ON_NOT_FOUNT) {
