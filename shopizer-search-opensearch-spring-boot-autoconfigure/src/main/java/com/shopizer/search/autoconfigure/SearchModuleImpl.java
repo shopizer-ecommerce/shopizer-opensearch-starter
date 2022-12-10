@@ -108,7 +108,9 @@ public class SearchModuleImpl implements SearchModule {
         System.out.println("Adding product document:");
         System.out.println(indexResponse);
         
-        //index to keywor
+        //index to keyword
+        
+        //name, brand and category
         
         request = new IndexRequest(new StringBuilder().append(KEYWORDS_INDEX).append(item.getLanguage()).toString());
         request.id(String.valueOf(item.getId()));

@@ -199,40 +199,6 @@ public class SearchClient {
 		createIndexRequest.settings(
 		        settings
 		        , XContentType.JSON);
-		
-		
-
-		/**
-        createIndexRequest.settings(Settings.builder()
-	            .put("index.number_of_shards", 4)
-	            .put("index.number_of_replicas", 3)
-	    );
-	    **.
-
-        HashMap<String, Object> properties = new HashMap<String, Object>();
-        mappings.entrySet().stream().forEach(e -> addMapping(e.getKey(), e.getValue(), properties));
-        
-
-        if(hasMappings) {
-        	HashMap<String, Object> keywordProperties = new HashMap<String, Object>();
-        	this.addKeyWordMapping(keywordProperties);
-        	properties.putAll(keywordProperties);
-        }
-        
-        
-        HashMap<String, Object> rootProperties = new HashMap<String, Object>();
-        rootProperties.put("properties", properties);
-        
-        /**
-         * Debug Json
-         */
-        
-        /**
-        ObjectMapper mapper = new ObjectMapper();
-        String jsonResult = mapper.writerWithDefaultPrettyPrinter()
-          .writeValueAsString(rootProperties);
-        System.out.println(jsonResult);
-        **/
         
 
 		createIndexRequest.mapping(mappings, XContentType.JSON);
@@ -245,35 +211,6 @@ public class SearchClient {
  
         
 	}
-	
-	/**
-    private Map<String, Object> parameters(Object obj) {
-        Map<String, Object> map = new HashMap<>();
-        for (Field field : obj.getClass().getDeclaredFields()) {
-            field.setAccessible(true);
-            try { map.put(field.getName(), field.get(obj)); } catch (Exception e) { }
-        }
-        return map;
-    }
-    
-	private void addMapping(String key,  String value, HashMap<String, Object> properties) {
-        HashMap<String, String> typeMapping = new HashMap<String,String>();
-        typeMapping.put("type", value);
-
-        properties.put(key, typeMapping);
-
-	}
-	**/
-	
-	/**
-	private void addKeyWordMapping(HashMap<String, Object> properties) {
-        HashMap<String, String> typeMapping = new HashMap<String,String>();
-        typeMapping.put("type", "search_as_you_type");
-
-        properties.put("suggestions", typeMapping);
-
-	}
-	**/
 	
 	protected RestHighLevelClient getClient() throws Exception {
 		
