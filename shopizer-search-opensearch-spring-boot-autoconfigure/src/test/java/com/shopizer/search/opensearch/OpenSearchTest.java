@@ -97,7 +97,20 @@ public class OpenSearchTest {
 			
 			item.setName("Racing Zoom Fly 5");
 			item.setDescription("Bridge the gap between your weekend training run and race day in a durable design that can be deployed not just at the starting line of your favourite race but in the days and months after your conquest.");
-			item.setPrice("109.00");
+			
+			/**
+			 * Inventory
+			 */
+			Map<String,String> inventory = new HashMap<String,String>();
+			inventory.put("SKU", "ADCG5678");
+			inventory.put("QTY", "1000");
+			inventory.put("PRICE", "109.99");
+			
+			List<Map<String,String>> inv = new ArrayList<Map<String,String>>();
+			inv.add(inventory);
+			
+			item.setInventory(inv);
+			
 			item.setStore("default");
 			
 			
