@@ -251,46 +251,7 @@ public class OpenSearchTest {
 		config.getKeywordsMappings().put("en", KEYWORDS_MAPPING_DEFAULT);
 		config.getSettings().put("en", loadClassPathResource(SETTING_DEFAULT_FILE));
 		
-		/**
-		config.getProductMappings().put("variants", "nested");
-		config.getProductMappings().put("brand", "keyword");
-		config.getProductMappings().put("store", "keyword");
-		config.getProductMappings().put("category", "text");
-		config.getProductMappings().put("name", "text");
-		config.getProductMappings().put("description", "text");
-		config.getProductMappings().put("price", "float");
-		config.getProductMappings().put("id", "long");
-		
-		config.getKeywordsMappings().put("store", "keyword");
-		**/
-		
-		/**
-		 * Suggested mapping
-		 * 		  "variants" : {
-			        "type": "nested"
-			      },
-			      "brand" : {
-			        "type": "keyword"
-			      },
-			      "store" : {
-			        "type": "keyword"
-			      },
-			      "category" : {
-			        "type": "text"
-			      },
-			      "name" : {
-			        "type": "text"
-			      },
-			      "description" : {
-			        "type": "text"
-			      },
-			      "price": {
-          			"type": "float"
-        		  },
-        		"id": {
-          			"type": "long"
-        		}
-		 */
+
 		
 		return config;
 		
