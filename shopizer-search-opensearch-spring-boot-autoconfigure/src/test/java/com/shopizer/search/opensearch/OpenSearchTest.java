@@ -97,7 +97,20 @@ public class OpenSearchTest {
 			
 			item.setName("Racing Zoom Fly 5");
 			item.setDescription("Bridge the gap between your weekend training run and race day in a durable design that can be deployed not just at the starting line of your favourite race but in the days and months after your conquest.");
-			item.setPrice("109.00");
+			
+			/**
+			 * Inventory
+			 */
+			Map<String,String> inventory = new HashMap<String,String>();
+			inventory.put("SKU", "ADCG5678");
+			inventory.put("QTY", "1000");
+			inventory.put("PRICE", "109.99");
+			
+			List<Map<String,String>> inv = new ArrayList<Map<String,String>>();
+			inv.add(inventory);
+			
+			item.setInventory(inv);
+			
 			item.setStore("default");
 			
 			
@@ -238,46 +251,7 @@ public class OpenSearchTest {
 		config.getKeywordsMappings().put("en", KEYWORDS_MAPPING_DEFAULT);
 		config.getSettings().put("en", loadClassPathResource(SETTING_DEFAULT_FILE));
 		
-		/**
-		config.getProductMappings().put("variants", "nested");
-		config.getProductMappings().put("brand", "keyword");
-		config.getProductMappings().put("store", "keyword");
-		config.getProductMappings().put("category", "text");
-		config.getProductMappings().put("name", "text");
-		config.getProductMappings().put("description", "text");
-		config.getProductMappings().put("price", "float");
-		config.getProductMappings().put("id", "long");
-		
-		config.getKeywordsMappings().put("store", "keyword");
-		**/
-		
-		/**
-		 * Suggested mapping
-		 * 		  "variants" : {
-			        "type": "nested"
-			      },
-			      "brand" : {
-			        "type": "keyword"
-			      },
-			      "store" : {
-			        "type": "keyword"
-			      },
-			      "category" : {
-			        "type": "text"
-			      },
-			      "name" : {
-			        "type": "text"
-			      },
-			      "description" : {
-			        "type": "text"
-			      },
-			      "price": {
-          			"type": "float"
-        		  },
-        		"id": {
-          			"type": "long"
-        		}
-		 */
+
 		
 		return config;
 		
