@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>com.shopizer</groupId>
 		<artifactId>shopizer-search-opensearch-starter</artifactId>
-		<version>1.0.4-SNAPSHOT</version>
+		<version>1.0.4</version>
 	</parent>
 	<artifactId>shopizer-search-opensearch-spring-boot-autoconfigure</artifactId>
 

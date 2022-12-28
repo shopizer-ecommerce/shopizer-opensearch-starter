@@ -8,7 +8,7 @@
 		<version>3.3.0</version>
 	</parent>
 	<artifactId>shopizer-search-opensearch-starter</artifactId>
-	<version>1.0.4-SNAPSHOT</version>
+	<version>1.0.4</version>
 	<packaging>pom</packaging>
 	<properties>
 		<java.version>11</java.version>
